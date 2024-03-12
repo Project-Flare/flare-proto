@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package flare;
+
+import "register_request.proto";
+
+message ClientMessage {
+    oneof client_message_type {
+        flare.RegisterRequest register_request = 1;
+    }
+}
