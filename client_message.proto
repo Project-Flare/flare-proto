@@ -3,9 +3,11 @@ syntax = "proto3";
 package flare;
 
 import "register_request.proto";
+import "auth_request.proto";
 
 message ClientMessage {
     oneof client_message_type {
         flare.RegisterRequest register_request = 1;
+        flare.AuthRequest auth_request = 2;
     }
 }
