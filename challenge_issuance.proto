@@ -5,4 +5,5 @@ package flare;
 message ChallengeIssuance {
     string id = 1;
     string hash = 2;
+    string salt = 3;
 }
