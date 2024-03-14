@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package flare;
+
+message ChallengeIssuance {
+    string id = 1;
+    string hash = 2;
+}

@@ -2,12 +2,14 @@ syntax = "proto3";
 
 package flare;
 
+import "challenge_issuance.proto";
 import "register_response.proto";
 import "auth_response.proto";
 
 message ServerMessage {
     oneof server_message_type {
-        flare.RegisterResponse register_response = 1;
-        flare.AuthResponse auth_response = 2;
+        flare.ChallengeIssuance challenge_issuance = 1;
+        flare.RegisterResponse register_response = 2;
+        flare.AuthResponse auth_response = 3;
     }
 }
