@@ -2,8 +2,12 @@ syntax = "proto3";
 
 package flare;
 
+// Message type: server to client
+
+// Currently unused
+
 message ChallengeIssuance {
-    string id = 1;
+    string request_id = 1;
     string hash = 2;
     string salt = 3;
 }
