@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package flare;
+
+// Message type: client to server
+
+// Denotes a request for information relating to a user
+// If the username field is left empty, information is to be fetched about the authenticated user
+// See: UserInfoResponse
+
+message UserInfoRequest {
+    optional string username = 1;
+}
