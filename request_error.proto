@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package flare;
+
+// Message type: server to client
+// Sent in response to any type of message, conveying errors in the initial handling phase
+// Reveals authentication errors
+
+message RequestError {
+    enum ErrorType {
+        ET_UNKNOWN = 0;
+        ET_UNAUTHENTICATED = 1;
+        ET_ACCESS_DENIED = 2;
+    }
+    ErrorType error = 1;
+}

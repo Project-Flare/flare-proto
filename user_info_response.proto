@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package flare;
+
+// Message type: client to server
+
+// Denotes a response containing information relating to a user
+// See: UserInfoRequest, User
+
+message UserInfoResponse {
+    User user = 1;    
+}
