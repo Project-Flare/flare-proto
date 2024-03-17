@@ -20,5 +20,5 @@ message AuthResponse {
         AR_UNKNOWN = 2;
     }
     AuthResult result = 1;
-    optional string new_session_key = 2;
+    optional string new_auth_token = 2;
 }

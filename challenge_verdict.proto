@@ -12,5 +12,5 @@ message ChallengeVerdict {
         V_DENY = 1;
     }
     string request_id = 1
-    Verdict result = 2;
+    Verdict verdict = 2;
 }
