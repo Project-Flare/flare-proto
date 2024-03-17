@@ -18,6 +18,7 @@ message AuthResponse {
         AR_OK = 0;
         AR_SESSION_INVALID = 1;
         AR_UNKNOWN = 2;
+        AR_SESSION_EXPIRED = 3;
     }
     AuthResult result = 1;
     optional string new_auth_token = 2;
