@@ -7,7 +7,5 @@ package flare;
 // Currently unused
 
 message ChallengeIssuance {
-    string request_id = 1;
-    string hash = 2;
-    string salt = 3;
+    string hash = 1;
 }
