@@ -10,6 +10,7 @@ import "auth_response.proto";
 import "user_list_response.proto";
 import "request_error.proto";
 import "user_info_response.proto";
+import "challenge_verdict.proto";
 
 // Base message originating from the server, outbound to the client
 // Wraps all server to client messages
@@ -25,5 +26,6 @@ message ServerMessage {
         flare.ChallengeIssuance challenge_issuance = 7;
         flare.UserListResponse user_list_response = 8;
         flare.UserInfoResponse user_info_response = 9;
+        flare.ChallengeVerdict challenge_verdict = 10;
     }
 }
