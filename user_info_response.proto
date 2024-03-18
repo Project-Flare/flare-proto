@@ -13,7 +13,7 @@ message UserInfoResponse {
     enum UserInfoError {
         NOT_FOUND = 0;
     }
-    oneof {
+    oneof result {
         User user = 1;
         UserInfoError error = 2;
     }
