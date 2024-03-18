@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package flare;
 
+import "user.proto";
+
 // Message type: client to server
 
 // Denotes a response containing information relating to a user

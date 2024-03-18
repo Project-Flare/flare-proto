@@ -4,7 +4,8 @@ package flare;
 
 // Message type: client to server
 
-// Currently unused
+// Denotes the proof of work response where the preimage of the challenge is submitted for verification
+// See: ChallengeIssuance
 
 message ChallengeResponse {
     string preimage = 1;

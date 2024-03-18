@@ -19,13 +19,13 @@ package flare;
 
 message RegisterResponse {
     enum RegisterDenyReason {
-        RDR_USERNAME_TAKEN = 0;
-        RDR_USERNAME_INVALID_SYMBOLS = 1;
-        RDR_USERNAME_INVALID_LENGTH = 2;
+        RDR_UNKNOWN = 0;
+        RDR_USERNAME_TAKEN = 1;
+        RDR_USERNAME_INVALID_SYMBOLS = 2;
+        RDR_USERNAME_INVALID_LENGTH = 3;
         
-        RDR_PASSWORD_BLANK = 3;
-        RDR_PASSWORD_WEAK = 4;
-        RDR_UNKNOWN = 5;
+        RDR_PASSWORD_BLANK = 4;
+        RDR_PASSWORD_WEAK = 5;
     }
     oneof register_result {
         string auth_token = 1;

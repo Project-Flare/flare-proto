@@ -4,7 +4,10 @@ package flare;
 
 // Message type: server to client
 
-// Currently unused
+// Denotes the verification result upon receiving the client's challenge solution
+
+// V_OK     Challenge solution has been accepted, previously staked request will be handled
+// V_DENY   Challenge solution denied due to incorrect preimage
 
 message ChallengeVerdict {
     enum Verdict {

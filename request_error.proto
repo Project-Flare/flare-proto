@@ -4,7 +4,7 @@ package flare;
 
 // Message type: server to client
 // Sent in response to any type of message, conveying errors in the initial handling phase
-// Reveals authentication errors
+// Reveals authentication errors or server program errata
 
 message RequestError {
     enum ErrorType {
