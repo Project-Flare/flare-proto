@@ -10,5 +10,11 @@ import "user.proto";
 // See: UserInfoRequest, User
 
 message UserInfoResponse {
-    User user = 1;    
+    enum UserInfoError {
+        NOT_FOUND = 0;
+    }
+    oneof {
+        User user = 1;
+        UserInfoError error = 2;
+    }
 }
