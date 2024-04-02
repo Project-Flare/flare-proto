@@ -1,5 +1,5 @@
 syntax = "proto3";
-package flare.v1;
+package flare_rpc.v1;
 
 // Asymmetric keys are transmitted in PKCS#8 PEM container format
 

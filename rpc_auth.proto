@@ -1,5 +1,5 @@
 syntax = "proto3";
-package flare.v1;
+package flare_rpc.v1;
 
 service AuthService {
     // Fetch server requirements/constraints for username and password acceptance (min and max length, string format ...)
