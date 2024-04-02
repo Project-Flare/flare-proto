@@ -1,0 +1,125 @@
+syntax = "proto3";
+package flare.v1;
+
+service AuthService {
+    // Fetch server requirements/constraints for username and password acceptance (min and max length, string format ...)
+    rpc GetCredentialRequirements (RequirementsRequest) returns (RequirementsResponse);
+    // Fetch server opinion on a specific username without submitting registration, useful for checking if already taken
+    rpc GetUsernameOpinion (UsernameOpinionRequest) returns (UsernameOpinionResponse);
+    // Register username:password
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+    // Exchange registered username:password for a new token
+    rpc Login (LoginRequest) returns (LoginResponse);
+    // Exchange existing token for a new one
+    rpc RenewToken (RenewTokenRequest) returns (RenewTokenResponse); 
+    // Verify validity of token
+    rpc GetTokenHealth (TokenHealthRequest) returns (TokenHealthResponse);
+}
+
+message RequirementsRequest {}
+
+message RequirementsResponse {
+    // String encoding format specifier
+    enum Encoding {
+        ENCODING_UNSPECIFIED = 0;   // N/A, fault
+        ENCODING_ASCII = 1;         // 8-bit ASCII
+        ENCODING_UNICODE = 2;       // Variable-length unicode
+    }
+    enum StringFormatType {
+        SFT_UNSPECIFIED = 0;         // N/A, fault
+        SFT_LETTERS_ONLY = 1;        // [A-Za-z] in ASCII, UB in Unicode but expects letter graphemes
+        SFT_LETTERS_NUMBERS = 2;     // [A-Za-z0-9], UB in unicode but expects letter graphemes
+        SFT_ALPHANUMERIC = 3;        // [\w]
+    }
+    message UsernameRequirements {
+        uint64 min_length = 1;              // Inclusive minimum length
+        uint64 max_length = 2;              // Inclusive maximum length
+        Encoding encoding = 3;              //
+        StringFormatType format_type = 4;   //
+    }
+    message PasswordRequirements {
+        uint64 max_length = 2;              // Inclusive maximum length
+        Encoding encoding = 3;              // 
+        uint64 bits_entropy = 4;            // base 2 logarithm of zxcvbn guesses given password with username in associated data
+    }
+
+    UsernameRequirements username_requirements = 1;
+    PasswordRequirements password_requirements = 2;
+}
+
+message UsernameOpinionRequest {
+    string username = 1;
+}
+
+message UsernameOpinionResponse {
+    enum UsernameOpinion {
+        OPINION_UNSPECIFIED = 0;    // N/A, fault
+        OPINION_TAKEN = 1;          // User already exists
+        OPINION_BAD = 2;            // Username non-conformant to requirements
+        OPINION_OK = 3;             //
+    }
+    UsernameOpinion opinion = 1;
+}
+
+message RegisterRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message RegisterResponse {
+    enum RegisterFailure {
+        RF_UNSPECIFIED = 0;     // N/A, fault
+        RF_USERNAME_TAKEN = 1;  //
+        RF_USERNAME_BAD = 2;    // Non-conformant username (See: rpc GetRequirements)
+        RF_PASSWORD_BAD = 3;    // Non-conformant password (See: rpc GetRequirements)
+    }
+
+    oneof register_result {
+        RegisterFailure failure = 1;
+        string token = 2;
+    }
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    enum LoginFailure {
+        RF_UNSPECIFIED = 0;
+        RF_USERNAME_INVALID = 1;
+        RF_PASSWORD_INVALID = 2;
+    }
+
+    oneof login_result {
+        LoginFailure failure = 1;
+        string token = 2;
+    }
+}
+
+message RenewTokenRequest {
+    string token = 1;
+}
+
+message RenewTokenResponse {
+    enum RenewTokenFailure {
+        RTF_UNSPECIFIED = 0;    // N/A, fault
+        RTF_INVALID = 1;        // Invalid token in request
+        RTF_DENIED = 2;         // Renew denied by policy. Login required.
+    }
+}
+
+message TokenHealthRequest {
+    string token = 1;
+}
+
+message TokenHealthResponse {
+    enum TokenHealth {
+        TH_UNSPECIFIED = 0; // N/A, fault
+        TH_DEAD = 1; // Invalid token
+        TH_OK = 2;
+    }
+
+    TokenHealth health = 1;
+}

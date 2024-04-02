@@ -1,0 +1,29 @@
+syntax = "proto3";
+package flare.v1;
+
+service Messaging {
+    rpc Message (MessageRequest) returns (MessageResponse);
+}
+
+message MessageRequest {
+    string recipient_username = 1;
+    MessageBody body = 2;
+}
+
+message MessageResponse {
+    enum MessageFailure {
+        MF_UNSPECIFIED = 0;         // N/A, fault
+        MF_UKNOWN_DESTINATION = 1;  // Destination (user?) does not exist
+    }
+
+    enum DeliveryResult {
+        DR_UNSPECIFIED = 0; // N/A, fault
+        DR_HANDOFF = 1;     // Delivered to user
+    }
+}
+
+message MessageBody {
+    bytes enc_message = 1;          // 
+    bytes sender_id_pub_key = 3;    // PKCS#8 PEM
+    bytes nonce = 4;                //
+}

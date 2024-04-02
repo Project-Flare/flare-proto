@@ -1,0 +1,9 @@
+syntax = "proto3";
+package flare.v1;
+
+message IncomingMessage {
+    string enc_message = 1;
+    string sender_username = 2;
+    string sender_id_pub_key = 3;
+    string nonce = 4;
+}
