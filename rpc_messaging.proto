@@ -1,41 +1,32 @@
 syntax = "proto3";
 package flare_rpc.v1;
 
-// Asymmetric keys are transmitted in PKCS#8 PEM container format
+import "rpc_messaging.proto";
 
 // Service for mailing information to other users
 service Messaging {
     rpc Message (MessageRequest) returns (MessageResponse);
 }
 
+// Outbound message body, see ws_messaging.proto -> ConfidentialMessage for guidelines on
+// enc_message formation and secondary fields
 message MessageRequest {
-    string recipient_username = 1;
-    MessageBody body = 2;
+    ConfidentialMessage confidential_message = 1;
 }
 
 message MessageResponse {
     enum MessageFailure {
-        MF_UNSPECIFIED = 0;         // N/A, fault
-        MF_UKNOWN_DESTINATION = 1;  // Destination does not exist
+        MESSAGE_FAILURE_UNSPECIFIED = 0;         // N/A, fault
+        MESSAGE_FAILURE_UKNOWN_DESTINATION = 1;  // Destination does not exist
     }
 
     enum MessageSuccess {
-        DR_UNSPECIFIED = 0; // N/A, fault
-        DR_HANDOFF = 1;     // Delivered to user
+        MESSAGE_SUCCESS_UNSPECIFIED = 0; // N/A, fault
+        MESSAGE_SUCCESS_HANDOFF = 1;     // Delivered to user
     }
 
     oneof message_result {
         MessageSuccess success = 1;
         MessageFailure failure = 2; 
     }
-}
-
-// Outbound message body, see ws_messaging.proto -> ConfidentialMessage for guidelines on
-// enc_message formation and secondary fields
-message MessageBody {
-    bytes enc_message = 1;
-    string sender_username = 2;
-    string sender_id_pub_key = 3;
-    string nonce = 4;
-    uint64 time_client = 5;
 }

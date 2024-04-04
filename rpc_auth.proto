@@ -1,7 +1,7 @@
 syntax = "proto3";
 package flare_rpc.v1;
 
-service AuthService {
+service Auth {
     // Fetch server requirements/constraints for username and password acceptance (min and max length, string format ...)
     rpc GetCredentialRequirements (RequirementsRequest) returns (RequirementsResponse);
     // Fetch server opinion on a specific username without submitting registration, useful for checking if already taken
@@ -26,10 +26,10 @@ message RequirementsResponse {
         ENCODING_UNICODE = 2;       // Variable-length unicode
     }
     enum StringFormatType {
-        SFT_UNSPECIFIED = 0;         // N/A, fault
-        SFT_LETTERS_ONLY = 1;        // [A-Za-z] in ASCII, UB in Unicode but expects letter graphemes
-        SFT_LETTERS_NUMBERS = 2;     // [A-Za-z0-9], UB in unicode but expects letter graphemes
-        SFT_ALPHANUMERIC = 3;        // [\w]
+        STRING_FORMAT_TYPE_UNSPECIFIED = 0;         // N/A, fault
+        STRING_FORMAT_TYPE_LETTERS_ONLY = 1;        // [A-Za-z] in ASCII, UB in Unicode but expects letter graphemes
+        STRING_FORMAT_TYPE_LETTERS_NUMBERS = 2;     // [A-Za-z0-9], UB in unicode but expects letter graphemes
+        STRING_FORMAT_TYPE_ALPHANUMERIC = 3;        // [\w]
     }
     message UsernameRequirements {
         uint64 min_length = 1;              // Inclusive minimum length
@@ -53,10 +53,10 @@ message UsernameOpinionRequest {
 
 message UsernameOpinionResponse {
     enum UsernameOpinion {
-        OPINION_UNSPECIFIED = 0;    // N/A, fault
-        OPINION_TAKEN = 1;          // User already exists
-        OPINION_BAD = 2;            // Username non-conformant to requirements
-        OPINION_OK = 3;             //
+        USERNAME_OPINION_UNSPECIFIED = 0;    // N/A, fault
+        USERNAME_OPINION_TAKEN = 1;          // User already exists
+        USERNAME_OPINION_BAD = 2;            // Username non-conformant to requirements
+        USERNAME_OPINION_OK = 3;             //
     }
     UsernameOpinion opinion = 1;
 }
@@ -68,10 +68,10 @@ message RegisterRequest {
 
 message RegisterResponse {
     enum RegisterFailure {
-        RF_UNSPECIFIED = 0;     // N/A, fault
-        RF_USERNAME_TAKEN = 1;  //
-        RF_USERNAME_BAD = 2;    // Non-conformant username (See: rpc GetRequirements)
-        RF_PASSWORD_BAD = 3;    // Non-conformant password (See: rpc GetRequirements)
+        REGISTER_FAILURE_UNSPECIFIED = 0;     // N/A, fault
+        REGISTER_FAILURE_USERNAME_TAKEN = 1;  //
+        REGISTER_FAILURE_USERNAME_BAD = 2;    // Non-conformant username (See: rpc GetRequirements)
+        REGISTER_FAILURE_PASSWORD_BAD = 3;    // Non-conformant password (See: rpc GetRequirements)
     }
 
     oneof register_result {
@@ -87,9 +87,9 @@ message LoginRequest {
 
 message LoginResponse {
     enum LoginFailure {
-        RF_UNSPECIFIED = 0;
-        RF_USERNAME_INVALID = 1;
-        RF_PASSWORD_INVALID = 2;
+        LOGIN_FAILURE_UNSPECIFIED = 0;
+        LOGIN_FAILURE_USERNAME_INVALID = 1;
+        LOGIN_FAILURE_PASSWORD_INVALID = 2;
     }
 
     oneof login_result {
@@ -104,9 +104,9 @@ message RenewTokenRequest {
 
 message RenewTokenResponse {
     enum RenewTokenFailure {
-        RTF_UNSPECIFIED = 0;    // N/A, fault
-        RTF_INVALID = 1;        // Invalid token in request
-        RTF_DENIED = 2;         // Renew denied by policy. Login required.
+        RENEW_TOKEN_FAILURE_UNSPECIFIED = 0;    // N/A, fault
+        RENEW_TOKEN_FAILURE_INVALID = 1;        // Invalid token in request
+        RENEW_TOKEN_FAILURE_DENIED = 2;         // Renew denied by policy. Login required.
     }
 }
 
@@ -116,9 +116,9 @@ message TokenHealthRequest {
 
 message TokenHealthResponse {
     enum TokenHealth {
-        TH_UNSPECIFIED = 0; // N/A, fault
-        TH_DEAD = 1; // Invalid token
-        TH_OK = 2;
+        TOKEN_HEALTH_UNSPECIFIED = 0; // N/A, fault
+        TOKEN_HEALTH_DEAD = 1; // Invalid token
+        TOKEN_HEALTH_OK = 2;
     }
 
     TokenHealth health = 1;
