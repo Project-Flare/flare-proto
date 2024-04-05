@@ -29,16 +29,16 @@ message MessageEnvelope {
                                     // *    on failure, the client MUST 
                                     //          *   EITHER handle the unexpected event in a way that preserves causality and restores harmony,
                                     //          *   OR abort the conversation with the sender to force a re-negotiation of a shared secret
-                                    // *    (suggested) resolving a counter leap:
+                                    // *    resolving a counter leap:
                                     //          *   allow by setting the counter to match the leap,
                                     //              and notifying the user (with a message-like) container the number of skipped messages
-                                    //          *   keeping a buffer of messages until order resolves itself, where for each leap a 
-                                    // *    (suggested) resolving a counter decrease:
+                                    //          *   keeping a buffer of messages until order resolves itself 
+                                    // *    resolving a counter decrease:
                                     //          *   IF the client maintains state about which counter values were not seen,
                                     //              AND the counter was not seen
                                     //              THEN the client may insert the message as normal, assuming a leap resolution
                                     //          *   not acknowledging the message
-                                    // *    (suggested) resolving a duplicate:
+                                    // *    resolving a duplicate:
                                     //          *   not acknowledging the message
 
     string sender_username = 2;     // sender's username to strengthen identity boundaries
