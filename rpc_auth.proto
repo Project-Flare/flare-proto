@@ -14,6 +14,10 @@ service Auth {
     rpc RenewToken (RenewTokenRequest) returns (RenewTokenResponse); 
     // Verify validity of token
     rpc GetTokenHealth (TokenHealthRequest) returns (TokenHealthResponse);
+    // Get local hash store
+    rpc GetClientHashParams (GetClientHashParamsRequest) returns (GetClientHashParamsResponse);
+    // Set local hash store
+    rpc SetLocalHashParams (SetClientHashParamsRequest) returns (SetClientHashParamsResponse);
 }
 
 message RequirementsRequest {}
@@ -122,4 +126,38 @@ message TokenHealthResponse {
     }
 
     TokenHealth health = 1;
+}
+
+message HashParams {
+    uint64 memory_cost = 1;
+    uint64 time_cost = 2;
+    uint64 registration_timestamp = 3;
+}
+
+message GetClientHashParamsRequest {
+    string username = 1;
+}
+
+message GetClientHashParamsResponse {
+    enum GetClientHashParamsError {
+        GET_CLIENT_HASH_PARAMS_ERROR_UNSPECIFIED = 0; // N/A, fault
+        GET_CLIENT_HASH_PARAMS_ERROR_USER_NOT_FOUND = 1;
+    }
+    oneof result {
+        HashParams params = 1;
+        GetClientHashParamsError error = 2;
+    }
+}
+
+message SetClientHashParamsRequest {
+    HashParams params = 1;
+}
+
+message SetClientHashParamsResponse {
+    enum SetClientHashParamsResult {
+        SET_CLIENT_HASH_PARAMS_RESULT_UNSPECIFIED = 0; // N/A, fault
+        SET_CLIENT_HASH_PARAMS_RESULT_OK = 1;
+    }
+
+    SetClientHashParamsResult result = 1;
 }
