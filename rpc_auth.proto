@@ -17,7 +17,7 @@ service Auth {
     // Get local hash store
     rpc GetClientHashParams (GetClientHashParamsRequest) returns (GetClientHashParamsResponse);
     // Set local hash store
-    rpc SetLocalHashParams (SetClientHashParamsRequest) returns (SetClientHashParamsResponse);
+    rpc SetClientHashParams (SetClientHashParamsRequest) returns (SetClientHashParamsResponse);
 }
 
 message RequirementsRequest {}
