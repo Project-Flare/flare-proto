@@ -1,5 +1,5 @@
 syntax = "proto3";
-package flare_rpc.v1;
+package flare.v1;
 
 service Users {
     rpc GetUser (GetUserRequest) returns (GetUserResponse);

@@ -1,7 +1,7 @@
 syntax = "proto3";
-package flare_rpc.v1;
+package flare.v1;
 
-import "rpc_messaging.proto";
+import "ws_messaging.proto";
 
 // Service for mailing information to other users
 service Messaging {
