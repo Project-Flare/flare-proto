@@ -68,6 +68,8 @@ message UsernameOpinionResponse {
 message RegisterRequest {
     string username = 1;
     string password_hash = 2;
+    HashParams hash_params = 3;
+    string identity_public_key = 4;
 }
 
 message RegisterResponse {
@@ -128,10 +130,13 @@ message TokenHealthResponse {
     TokenHealth health = 1;
 }
 
+// Parameters for client-side hashing of PIN/password
+// Parameter measurements are according to Argon2 specification
 message HashParams {
-    uint64 memory_cost = 1;
-    uint64 time_cost = 2;
-    uint64 registration_timestamp = 3;
+    uint64 memory_cost = 1;     //
+    uint64 time_cost = 2;       // 
+    string salt = 3;            // Standard base64 encoding of the salt
+    optional string hash = 4;   // New client-supplied hash generated with previous parameters
 }
 
 message GetClientHashParamsRequest {
@@ -140,10 +145,11 @@ message GetClientHashParamsRequest {
 
 message GetClientHashParamsResponse {
     enum GetClientHashParamsError {
-        GET_CLIENT_HASH_PARAMS_ERROR_UNSPECIFIED = 0; // N/A, fault
-        GET_CLIENT_HASH_PARAMS_ERROR_USER_NOT_FOUND = 1;
+        GET_CLIENT_HASH_PARAMS_ERROR_UNSPECIFIED = 0;       // N/A, fault
+        GET_CLIENT_HASH_PARAMS_ERROR_USER_NOT_FOUND = 1;    // 
+        GET_CLIENT_HASH_PARAMS_ERROR_MISSING = 2;           // Parameters are unknown to the server
     }
-    oneof result {
+    oneof get_client_hash_params_result {
         HashParams params = 1;
         GetClientHashParamsError error = 2;
     }
