@@ -1,6 +1,27 @@
 syntax = "proto3";
 package flare.v1;
 
+// AUTHENTICATION TOKENS
+// The server relies on authentication tokens (refered to as "tokens" in the API) to verify user identity.
+// The client fetches a token by exchanging their username:secret combination in requests such as:
+// * registration   (registering username:secret and then immediately receiving a token)
+// * login          (re-using username:secret of a previous registration to receive a new token)
+// * token renewal  (use an existing token to generate a new one, both remaining valid)
+
+// SECRET, NOT PASSWORD
+// To be specific, the secret the client exchanges is NOT a password, and SHOULD NOT be user input, rather,
+// it is expected that the secret is the result of a client-sided Argon2 hashing process of
+// the input password. For that reason, there exist `GetClientHashParams` and `SetClientHashParams` endpoints.
+// These endpoints are meant to allow the client to store input data to their local hashing processes,
+// the server uses the secret as a password, meaning the client *must* derive the same secret every time, even
+// across clients. These endpoints allow for storing the the memory and time costs, as well as salts.
+
+// THE CLIENT MUST DEFEND THE SECRET AGAINST REVERSING
+// However, the client MUST NOT loosely use these values when fetched from the server. The client MUST verify
+// that these values meet minimum requirements (OWASP PH) and refuse to send any unreasonably secure hashes.
+// The client MUST have logic built in to update low-security hash parameters when they appear.
+// This mechanism is used to limit the sensitive information (possibly PI or reused) passwords often have.
+
 service Auth {
     // Fetch server requirements/constraints for username and password acceptance (min and max length, string format ...)
     rpc GetCredentialRequirements (RequirementsRequest) returns (RequirementsResponse);
@@ -66,10 +87,12 @@ message UsernameOpinionResponse {
 }
 
 message RegisterRequest {
-    string username = 1;
-    string password_hash = 2;
-    HashParams hash_params = 3;
-    string identity_public_key = 4;
+    string username = 1;                    // Desired username
+    string password_hash = 2;               // Client-generated password hash
+                                            // * the server will validate the secret only for its entropy/strength as a password
+                                            // * a hash is recommended and expected to ensure a compromised server will not get a plaintext password
+    HashParams hash_params = 3;             // Complements the client-generated password hash by allowing the clients to store local hashing data server-side
+    string identity_public_key = 4;         // Client-generated secp521r1 public key in PEM format
 }
 
 message RegisterResponse {
@@ -104,9 +127,7 @@ message LoginResponse {
     }
 }
 
-message RenewTokenRequest {
-    string token = 1;
-}
+message RenewTokenRequest {}
 
 message RenewTokenResponse {
     enum RenewTokenFailure {
@@ -114,11 +135,10 @@ message RenewTokenResponse {
         RENEW_TOKEN_FAILURE_INVALID = 1;        // Invalid token in request
         RENEW_TOKEN_FAILURE_DENIED = 2;         // Renew denied by policy. Login required.
     }
-}
-
-message TokenHealthRequest {
     string token = 1;
 }
+
+message TokenHealthRequest {}
 
 message TokenHealthResponse {
     enum TokenHealth {
@@ -133,10 +153,20 @@ message TokenHealthResponse {
 // Parameters for client-side hashing of PIN/password
 // Parameter measurements are according to Argon2 specification
 message HashParams {
-    uint64 memory_cost = 1;     //
-    uint64 time_cost = 2;       // 
+    uint64 memory_cost = 1;     // Bytes
+    uint64 time_cost = 2;       // Iterations
     string salt = 3;            // Standard base64 encoding of the salt
-    optional string hash = 4;   // New client-supplied hash generated with previous parameters
+                                // The client MUST NOT use solely this salt for local password hashing
+                                // Instead, the server-stored halt MUST be combined with a pseudorandom salt, e.g.,
+                                // * the username
+                                // * the server host
+                                // * (optional) the server TLS public key
+                                // ... and other re-generable identifiers that make rainbow tables hard to produce,
+                                // otherwise using the server-stored salt may make the client an oracle or lead it to
+                                // produce weak hashes
+
+                                // The same logic applies to `memory_cost` and `time_cost`. The client MUST set strong minimums for these values,
+                                // reject authenticating with unreasonably weak values, and upgrade old values to stronger recommended ones.
 }
 
 message GetClientHashParamsRequest {
@@ -156,7 +186,8 @@ message GetClientHashParamsResponse {
 }
 
 message SetClientHashParamsRequest {
-    HashParams params = 1;
+    HashParams params = 1;      // Parameters for client-sided Argon2 used to derive the NEW hash
+    string new_hash = 2;        // New hash used as the "server password"
 }
 
 message SetClientHashParamsResponse {
