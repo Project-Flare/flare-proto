@@ -1,0 +1,19 @@
+syntax = "proto3";
+package flare.v1;
+
+service Users {
+    rpc GetUser (GetUserRequest) returns (GetUserResponse);
+}
+
+message GetUserRequest {
+    string username = 1;
+}
+
+message GetUserResponse {
+    optional User user = 1;
+}
+
+message User {
+    string username = 1;
+    string id_pub_key = 2;
+}

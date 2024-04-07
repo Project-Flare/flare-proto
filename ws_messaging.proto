@@ -1,0 +1,68 @@
+syntax = "proto3";
+package flare.v1;
+
+// Asymmetric keys are transmitted in PKCS#8 PEM container format.
+// "+" denotes base64 concatenation, where a separator "|" is added, e.g,
+// "tornado" + "juice" = b64_std("tornado").concat("|").concat(b64_std("juice"))
+
+// Generic client-client message received as notification, enveloping text and profile update messages.
+// [enc_message, sender_username, sender_id_pub_key, nonce, time_client] are expected to be mirrored
+// from the outbound message (rpc_messaging.proto -> MessageBody)
+message ConfidentialMessage {
+    string enc_message = 1;         // standard base64 encoding of AES-GCM-SIV output,
+                                    // ...  where input plaintext is:
+                                    //      serialized MessageEnvelope
+                                    // ...  where key is:
+                                    //      the secp521r1 Diffie-Hellman result of the sender's private key, and the recipient's public key 
+
+    string nonce = 2;               // 96-bit std_b64 encoded nonce:
+    string sender_id_pub_key = 3;   // sender's secp521r1 public key (PKCS#8 PEM)
+                                    // [64 bit unix millis] [32 bit csprng number, or modulus counter]
+    string recipient_username = 4;  // target's username to strengthen identity boundaries
+    uint64 time_server = 5;         // not in associated data, untrusted server-added received timestamp
+}
+
+// Generic message container, wrapping over various plaintext user-user messages
+message MessageEnvelope {
+    uint64 sender_counter = 1;      // Monotonically-increasing outbound message counter maintained by the sender
+                                    // *    the client MUST assert this monotonic increase of the outbound counter by maintaining state
+                                    // *    on failure, the client MUST 
+                                    //          *   EITHER handle the unexpected event in a way that preserves causality and restores harmony,
+                                    //          *   OR abort the conversation with the sender to force a re-negotiation of a shared secret
+                                    // *    resolving a counter leap:
+                                    //          *   allow by setting the counter to match the leap,
+                                    //              and notifying the user (with a message-like) container the number of skipped messages
+                                    //          *   keeping a buffer of messages until order resolves itself 
+                                    // *    resolving a counter decrease:
+                                    //          *   IF the client maintains state about which counter values were not seen,
+                                    //              AND the counter was not seen
+                                    //              THEN the client may insert the message as normal, assuming a leap resolution
+                                    //          *   not acknowledging the message
+                                    // *    resolving a duplicate:
+                                    //          *   not acknowledging the message
+
+    string sender_username = 2;     // sender's username to strengthen identity boundaries
+    uint64 time_client = 3;         // client time (untrusted time of sending, as reported by sender)
+
+    bytes balloon = 4;              // Padding to obfuscate message lengths by alignment 
+    
+    oneof message {
+        TextMessage text_message = 5;
+        ProfileMessage profile_message = 6;
+    }
+}
+
+message TextMessage {
+    string text = 1;
+}
+
+// Profile update, early prototype
+message ProfileMessage {
+    string display_name = 1;
+    bytes image_blob = 2;
+}
+
+// Read receipt targeting a specific message by its `sender_counter`
+message ReceiptMessage {
+    string target_counter = 1;
+}

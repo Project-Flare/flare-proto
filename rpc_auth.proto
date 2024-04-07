@@ -1,0 +1,200 @@
+syntax = "proto3";
+package flare.v1;
+
+// AUTHENTICATION TOKENS
+// The server relies on authentication tokens (refered to as "tokens" in the API) to verify user identity.
+// The client fetches a token by exchanging their username:secret combination in requests such as:
+// * registration   (registering username:secret and then immediately receiving a token)
+// * login          (re-using username:secret of a previous registration to receive a new token)
+// * token renewal  (use an existing token to generate a new one, both remaining valid)
+
+// SECRET, NOT PASSWORD
+// To be specific, the secret the client exchanges is NOT a password, and SHOULD NOT be user input, rather,
+// it is expected that the secret is the result of a client-sided Argon2 hashing process of
+// the input password. For that reason, there exist `GetClientHashParams` and `SetClientHashParams` endpoints.
+// These endpoints are meant to allow the client to store input data to their local hashing processes,
+// the server uses the secret as a password, meaning the client *must* derive the same secret every time, even
+// across clients. These endpoints allow for storing the the memory and time costs, as well as salts.
+
+// THE CLIENT MUST DEFEND THE SECRET AGAINST REVERSING
+// However, the client MUST NOT loosely use these values when fetched from the server. The client MUST verify
+// that these values meet minimum requirements (OWASP PH) and refuse to send any unreasonably secure hashes.
+// The client MUST have logic built in to update low-security hash parameters when they appear.
+// This mechanism is used to limit the sensitive information (possibly PI or reused) passwords often have.
+
+service Auth {
+    // Fetch server requirements/constraints for username and password acceptance (min and max length, string format ...)
+    rpc GetCredentialRequirements (RequirementsRequest) returns (RequirementsResponse);
+    // Fetch server opinion on a specific username without submitting registration, useful for checking if already taken
+    rpc GetUsernameOpinion (UsernameOpinionRequest) returns (UsernameOpinionResponse);
+    // Register username:password
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+    // Exchange registered username:password for a new token
+    rpc Login (LoginRequest) returns (LoginResponse);
+    // Exchange existing token for a new one
+    rpc RenewToken (RenewTokenRequest) returns (RenewTokenResponse); 
+    // Verify validity of token
+    rpc GetTokenHealth (TokenHealthRequest) returns (TokenHealthResponse);
+    // Get local hash store
+    rpc GetClientHashParams (GetClientHashParamsRequest) returns (GetClientHashParamsResponse);
+    // Set local hash store
+    rpc SetClientHashParams (SetClientHashParamsRequest) returns (SetClientHashParamsResponse);
+}
+
+message RequirementsRequest {}
+
+message RequirementsResponse {
+    // String encoding format specifier
+    enum Encoding {
+        ENCODING_UNSPECIFIED = 0;   // N/A, fault
+        ENCODING_ASCII = 1;         // 8-bit ASCII
+        ENCODING_UNICODE = 2;       // Variable-length unicode
+    }
+    enum StringFormatType {
+        STRING_FORMAT_TYPE_UNSPECIFIED = 0;         // N/A, fault
+        STRING_FORMAT_TYPE_LETTERS_ONLY = 1;        // [A-Za-z] in ASCII, UB in Unicode but expects letter graphemes
+        STRING_FORMAT_TYPE_LETTERS_NUMBERS = 2;     // [A-Za-z0-9], UB in unicode but expects letter graphemes
+        STRING_FORMAT_TYPE_ALPHANUMERIC = 3;        // [\w]
+    }
+    message UsernameRequirements {
+        uint64 min_length = 1;              // Inclusive minimum length
+        uint64 max_length = 2;              // Inclusive maximum length
+        Encoding encoding = 3;              //
+        StringFormatType format_type = 4;   //
+    }
+    message PasswordRequirements {
+        uint64 max_length = 2;              // Inclusive maximum length
+        Encoding encoding = 3;              // 
+        uint64 bits_entropy = 4;            // base 2 logarithm of zxcvbn guesses given password with username in associated data
+    }
+
+    UsernameRequirements username_requirements = 1;
+    PasswordRequirements password_requirements = 2;
+}
+
+message UsernameOpinionRequest {
+    string username = 1;
+}
+
+message UsernameOpinionResponse {
+    enum UsernameOpinion {
+        USERNAME_OPINION_UNSPECIFIED = 0;    // N/A, fault
+        USERNAME_OPINION_TAKEN = 1;          // User already exists
+        USERNAME_OPINION_BAD = 2;            // Username non-conformant to requirements
+        USERNAME_OPINION_OK = 3;             //
+    }
+    UsernameOpinion opinion = 1;
+}
+
+message RegisterRequest {
+    string username = 1;                    // Desired username
+    string password_hash = 2;               // Client-generated password hash
+                                            // * the server will validate the secret only for its entropy/strength as a password
+                                            // * a hash is recommended and expected to ensure a compromised server will not get a plaintext password
+    HashParams hash_params = 3;             // Complements the client-generated password hash by allowing the clients to store local hashing data server-side
+    string identity_public_key = 4;         // Client-generated secp521r1 public key in PEM format
+}
+
+message RegisterResponse {
+    enum RegisterFailure {
+        REGISTER_FAILURE_UNSPECIFIED = 0;     // N/A, fault
+        REGISTER_FAILURE_USERNAME_TAKEN = 1;  //
+        REGISTER_FAILURE_USERNAME_BAD = 2;    // Non-conformant username (See: rpc GetRequirements)
+        REGISTER_FAILURE_PASSWORD_BAD = 3;    // Non-conformant password (See: rpc GetRequirements)
+    }
+
+    oneof register_result {
+        RegisterFailure failure = 1;
+        string token = 2;
+    }
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    enum LoginFailure {
+        LOGIN_FAILURE_UNSPECIFIED = 0;
+        LOGIN_FAILURE_USERNAME_INVALID = 1;
+        LOGIN_FAILURE_PASSWORD_INVALID = 2;
+    }
+
+    oneof login_result {
+        LoginFailure failure = 1;
+        string token = 2;
+    }
+}
+
+message RenewTokenRequest {}
+
+message RenewTokenResponse {
+    enum RenewTokenFailure {
+        RENEW_TOKEN_FAILURE_UNSPECIFIED = 0;    // N/A, fault
+        RENEW_TOKEN_FAILURE_INVALID = 1;        // Invalid token in request
+        RENEW_TOKEN_FAILURE_DENIED = 2;         // Renew denied by policy. Login required.
+    }
+    string token = 1;
+}
+
+message TokenHealthRequest {}
+
+message TokenHealthResponse {
+    enum TokenHealth {
+        TOKEN_HEALTH_UNSPECIFIED = 0; // N/A, fault
+        TOKEN_HEALTH_DEAD = 1; // Invalid token
+        TOKEN_HEALTH_OK = 2;
+    }
+
+    TokenHealth health = 1;
+}
+
+// Parameters for client-side hashing of PIN/password
+// Parameter measurements are according to Argon2 specification
+message HashParams {
+    uint64 memory_cost = 1;     // Bytes
+    uint64 time_cost = 2;       // Iterations
+    string salt = 3;            // Standard base64 encoding of the salt
+                                // The client MUST NOT use solely this salt for local password hashing
+                                // Instead, the server-stored halt MUST be combined with a pseudorandom salt, e.g.,
+                                // * the username
+                                // * the server host
+                                // * (optional) the server TLS public key
+                                // ... and other re-generable identifiers that make rainbow tables hard to produce,
+                                // otherwise using the server-stored salt may make the client an oracle or lead it to
+                                // produce weak hashes
+
+                                // The same logic applies to `memory_cost` and `time_cost`. The client MUST set strong minimums for these values,
+                                // reject authenticating with unreasonably weak values, and upgrade old values to stronger recommended ones.
+}
+
+message GetClientHashParamsRequest {
+    string username = 1;
+}
+
+message GetClientHashParamsResponse {
+    enum GetClientHashParamsError {
+        GET_CLIENT_HASH_PARAMS_ERROR_UNSPECIFIED = 0;       // N/A, fault
+        GET_CLIENT_HASH_PARAMS_ERROR_USER_NOT_FOUND = 1;    // 
+        GET_CLIENT_HASH_PARAMS_ERROR_MISSING = 2;           // Parameters are unknown to the server
+    }
+    oneof get_client_hash_params_result {
+        HashParams params = 1;
+        GetClientHashParamsError error = 2;
+    }
+}
+
+message SetClientHashParamsRequest {
+    HashParams params = 1;      // Parameters for client-sided Argon2 used to derive the NEW hash
+    string new_hash = 2;        // New hash used as the "server password"
+}
+
+message SetClientHashParamsResponse {
+    enum SetClientHashParamsResult {
+        SET_CLIENT_HASH_PARAMS_RESULT_UNSPECIFIED = 0; // N/A, fault
+        SET_CLIENT_HASH_PARAMS_RESULT_OK = 1;
+    }
+
+    SetClientHashParamsResult result = 1;
+}
