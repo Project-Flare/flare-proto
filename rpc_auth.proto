@@ -3,6 +3,7 @@ package flare.v1;
 
 // AUTHENTICATION TOKENS
 // The server relies on authentication tokens (refered to as "tokens" in the API) to verify user identity.
+// The token can be submitted along with a request by attaching it to gRPC metadata as an ASCII `flare-auth` key.
 // The client fetches a token by exchanging their username:secret combination in requests such as:
 // * registration   (registering username:secret and then immediately receiving a token)
 // * login          (re-using username:secret of a previous registration to receive a new token)
@@ -142,12 +143,13 @@ message TokenHealthRequest {}
 
 message TokenHealthResponse {
     enum TokenHealth {
-        TOKEN_HEALTH_UNSPECIFIED = 0; // N/A, fault
-        TOKEN_HEALTH_DEAD = 1; // Invalid token
+        TOKEN_HEALTH_UNSPECIFIED = 0;   // N/A, fault
+        TOKEN_HEALTH_DEAD = 1;          // Invalid or expired
         TOKEN_HEALTH_OK = 2;
     }
 
     TokenHealth health = 1;
+    uint64 expires_on = 2;
 }
 
 // Parameters for client-side hashing of PIN/password
@@ -156,8 +158,8 @@ message HashParams {
     uint64 memory_cost = 1;     // Bytes
     uint64 time_cost = 2;       // Iterations
     string salt = 3;            // Standard base64 encoding of the salt
-                                // The client MUST NOT use solely this salt for local password hashing
-                                // Instead, the server-stored halt MUST be combined with a pseudorandom salt, e.g.,
+                                // The client MUST NOT use solely this salt for local password hashing,
+                                // instead, the server-stored halt MUST be combined with a pseudorandom salt, e.g.,
                                 // * the username
                                 // * the server host
                                 // * (optional) the server TLS public key
