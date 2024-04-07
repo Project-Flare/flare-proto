@@ -131,11 +131,6 @@ message LoginResponse {
 message RenewTokenRequest {}
 
 message RenewTokenResponse {
-    enum RenewTokenFailure {
-        RENEW_TOKEN_FAILURE_UNSPECIFIED = 0;    // N/A, fault
-        RENEW_TOKEN_FAILURE_INVALID = 1;        // Invalid token in request
-        RENEW_TOKEN_FAILURE_DENIED = 2;         // Renew denied by policy. Login required.
-    }
     string token = 1;
 }
 
