@@ -1,17 +1,91 @@
 syntax = "proto3";
 package flare.v1;
 
-import "ws_messaging.proto";
+// USE OF PUBLIC-KEY ENCRYPTION IN THE FLARE_G2 PROTOCOL
+// As encryption is mandated in the protocol, in order for the client to communicate with another client, a shared key must be agreed upon.
+// In the current iteration of the 2nd generation protocol, this is achieved through a static Diffie-Hellman exchange between identity keys.
+// Each client locally generates a secp521r1 key pair on login/registration and binds it to that session. The key is uploaded to the server.
 
-// Service for mailing information to other users
+// KEY AGREEMENT, TRUST
+// The server provides a service to fetch another registered user's public key by their username.
+// On adding a user to the contacts list, or otherwise initiating a first-time interaction, the user must choose to trust
+// the recipient's public key before proceeding. The recipient's public key fingerprint is displayed in a human-comparable manner (e.g., emojis).
+// This leaves the security model to be TOFU "trust on first use" when the sender cannot SECURELY verify that the key provided by the server
+// indeed belongs to the intended recipient, otherwise it is a "perfect beforehand secret exchange" model, when the user is able to compare the public
+// key between his/her own device and the recipients' in a secure environment.
+
+// COMPUTING SHARED SECRETS
+// The sender, with the knowledge of the recipient's username and public key, can then encrypt and send messages to that user.
+// The sender takes his/her private key, the recipient's public key, and computes a shared static ECDH secret from both.
+// The shared secret is non-uniform, so in order to generate a suitable encryption key from it, the client passes it through SHA256.
+
+// PROTECTING MESSAGE SIZES
+// On preparing to send a message, the client produces a message prototype, characterized by a `MessageEnvelope` structure, only missing a
+// `padding_balloon` field. This prototype message will have a specific length in bytes. The client then rounds the byte length of the message
+// prototype up to a power of two (2^x), which is to have a minimal value of 128. The client must then substract `original_prototype_size` from `clamp(2^x, 128, inf)`
+// to get the required length of `padding_balloon`. The client then fills `padding_balloon` with nonsense of that subtracted length.
+
+// ORDERING MESSAGES
+// When it comes to ordered messaging (text messaging), the protocol uses IDs and references to prevent out-of-order messages.
+// Each message is to have a counter `message_id`, which is chosen by the sender, and is unique to all of the sender's messages to the recipient.
+// Each message refers to a previous sender's message, or 0 in the event there is none.
+// Each client must maintain state to track the counter's behavior. The client must ensure the counter counts up by one on every message.
+
+// RESILIENT MESSAGE ORDERING
+// The client should, instead of aborting an exchange/conversation when running into a reference error, resolve the error(s) gracefully.
+// While messages received with a reference that does not exist must not be displayed, they can be kept in an ordered set meant to resolve missing messages.
+// The client, on receiving a message with a reference that is unknown, can send a `Clarify` message to the other user. On receiving it, the other user
+// ideally repeats a locally-stored message that was indicated to be missing. The original recipient, having received the missing message, can then
+// verify that the "bad message set" is now correct, and display all of the messages, or find new errors and iteratively try to resolve them.
+
 service Messaging {
     rpc Message (MessageRequest) returns (MessageResponse);
 }
 
-// Outbound message body, see ws_messaging.proto -> ConfidentialMessage for guidelines on
-// enc_message formation and secondary fields
 message MessageRequest {
-    ConfidentialMessage confidential_message = 1;
+    string recipient_username = 1;                  // The intended recipient, according to the client
+    DiffieHellmanMessage encrypted_message = 2;     // 
+}
+
+// AES_256_GCM_SIV encrypted package intended for a user of the service
+// The key is the result of SHA256(ECDH_SECP521R1(sender_private_identity_key, recipient_public_identity_key))
+message DiffieHellmanMessage {
+    bytes ciphertext = 1;                   // ciphertext of a protobuf-serialized MessageEnvelope 
+    bytes nonce = 2;                        // 96-bit nonce used to initialize the cipher
+                                            // [64-bit unix millis] || [32-bit random number]
+    string sender_identity_public_key = 3;  // DER-encoded secp521r1 public key
+}
+
+message MessageEnvelope {
+    uint64 message_id = 1;              // Unique counter-based identifier of the message
+    uint64 reference_to_id = 2;         // The counter reference of the last message composed by the sender
+    string sender_username = 3;         // Sender username, intended for the recipient to match against 
+                                        // ws_messaging.proto's InboundUserMessage's sender_username field
+                                        // for checking against identity tampering.
+    uint64 sender_time = 4;             // Sender-defined time of when the message was sent off
+    string padding_balloon = 5;         // Message length padding up to the closest higher power of two (the minimal power of two is 128)
+    oneof message {
+        Text text_message = 6;          // Simple text message
+        Profile profile_message = 7;    // Unmasking or updating the profile containing a display name
+        Receipt receipt_message = 8;    // Acknowleding the successful receipt and display of a message
+        Clarify clarify_message = 9;    // Requesting other user to re-send a message by its reference
+    }
+}
+
+message Text {
+    string content = 1;
+}
+
+message Profile {
+    string display_name = 1;
+}
+
+message Receipt {
+    string reference = 1;
+}
+
+message Clarify {
+    string reference = 1;
 }
 
 message MessageResponse {
@@ -21,8 +95,9 @@ message MessageResponse {
     }
 
     enum MessageSuccess {
-        MESSAGE_SUCCESS_UNSPECIFIED = 0; // N/A, fault
-        MESSAGE_SUCCESS_HANDOFF = 1;     // Delivered to user
+        MESSAGE_SUCCESS_UNSPECIFIED = 0;    //
+        MESSAGE_SUCCESS_HANDOFF = 1;        // The message was directly handed off to the user
+        MESSAGE_SUCCESS_DELIVERED = 2;      // The message was added to the user's mailbox
     }
 
     oneof message_result {
