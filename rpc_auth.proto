@@ -40,6 +40,8 @@ service Auth {
     rpc GetClientHashParams (GetClientHashParamsRequest) returns (GetClientHashParamsResponse);
     // Set local hash store
     rpc SetClientHashParams (SetClientHashParamsRequest) returns (SetClientHashParamsResponse);
+    // Delete user data as much as is possible on the server
+    rpc Obliviate (ObliviateRequest) returns (ObliviateResponse);
 }
 
 message RequirementsRequest {}
@@ -195,4 +197,18 @@ message SetClientHashParamsResponse {
     }
 
     SetClientHashParamsResult result = 1;
+}
+
+message ObliviateRequest {
+    bool lockdown = 1;  // Request the server to prevent the username from being reused in the future
+}
+
+message ObliviateResponse {
+    enum ObliviateResult {
+        OBLIVIATE_RESULT_UNSPECIFIED = 0;
+        OBLIVIATE_RESULT_OK_UNLOCKED = 1;
+        OBLIVIATE_RESULT_OK_LOCKED = 2;
+    }
+
+    ObliviateResult result = 1;
 }
