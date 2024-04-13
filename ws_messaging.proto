@@ -3,8 +3,15 @@ package flare.v1;
 
 import "rpc_messaging.proto";
 
+// server -> client
 message InboundUserMessage {
     string sender_username = 1;                     // server's view of the sender's username
     uint64 server_time = 2;                         // server's view of message receive time (unix millis)
     DiffieHellmanMessage encrypted_message = 3;     // rpc_messaging.proto -> MessageEnvelope
+}
+
+// Authenticate a WebSocket session with `token` in order to
+// subscribe to a stream of `InboundUserMessage`
+message SubscribeRequest {
+    string token = 1;
 }
