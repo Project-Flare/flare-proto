@@ -91,7 +91,7 @@ message Clarify {
 message MessageResponse {
     enum MessageFailure {
         MESSAGE_FAILURE_UNSPECIFIED = 0;         // N/A, fault
-        MESSAGE_FAILURE_UKNOWN_DESTINATION = 1;  // Destination does not exist
+        MESSAGE_FAILURE_UNKNOWN_DESTINATION = 1;  // Destination does not exist
     }
 
     enum MessageSuccess {
