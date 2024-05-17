@@ -48,12 +48,12 @@ message MessageRequest {
 }
 
 // AES_256_GCM_SIV encrypted package intended for a user of the service
-// The key is the result of SHA256(ECDH_SECP521R1(sender_private_identity_key, recipient_public_identity_key))
+// The key is the result of BLAKE3(ECDH_SECP521R1(sender_private_identity_key, recipient_public_identity_key))
 message DiffieHellmanMessage {
     bytes ciphertext = 1;                   // ciphertext of a protobuf-serialized MessageEnvelope 
     bytes nonce = 2;                        // 96-bit nonce used to initialize the cipher
                                             // [64-bit unix millis] || [32-bit random number]
-    string sender_identity_public_key = 3;  // DER-encoded secp521r1 public key
+    string sender_identity_public_key = 3;  // B64(DER)-encoded secp521r1 public key
 }
 
 message MessageEnvelope {
